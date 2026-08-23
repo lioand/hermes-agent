@@ -196,6 +196,14 @@ if [ "$DEV_SANDBOX_INTERACTIVE" = true ]; then
   dev_mounts=(--dev /dev)
 fi
 
+# Every TLS client below trusts certs/ca.pem -- the ephemeral CA the proxy mints
+# its per-host certs from -- and that includes Node via NODE_EXTRA_CA_CERTS.
+# certs/real-ca.pem is the *public* bundle, and it is the proxy's own business:
+# it is what proxy.py verifies the real upstream against (see its argv below).
+# Handing real-ca.pem to Node instead made npm reject the MITM cert with
+# UNABLE_TO_VERIFY_LEAF_SIGNATURE and abort mid-handshake, which surfaced only as
+# hundreds of SSLEOFError lines in proxy.log and took the installer E2E down with
+# it, while pip/uv -- which do read SSL_CERT_FILE -- kept working.
 exec bwrap \
   --unshare-pid \
   --die-with-parent --proc /proc --tmpfs /tmp \
@@ -216,7 +224,7 @@ exec bwrap \
   --setenv CURL_CA_BUNDLE /work/certs/ca.pem \
   --setenv SSL_CERT_FILE /work/certs/ca.pem \
   --setenv GIT_SSL_CAINFO /work/certs/ca.pem \
-  --setenv NODE_EXTRA_CA_CERTS /work/certs/real-ca.pem \
+  --setenv NODE_EXTRA_CA_CERTS /work/certs/ca.pem \
   --setenv OPENSSL_CONF /work/certs/openssl.cnf \
   --setenv HTTP_PROXY http://127.0.0.1:8080 \
   --setenv HTTPS_PROXY http://127.0.0.1:8080 \
