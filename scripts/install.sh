@@ -2326,10 +2326,14 @@ install_node_deps() {
         # A failed npm install used to still print "✓ Node.js dependencies
         # installed", hiding the degradation from the user (#77003). Now it
         # fails the install outright instead of burying the warning (#85297).
-        # Capture npm output so failures are diagnosable (#87340).
+        # Capture npm output so failures are diagnosable (#87340). Use
+        # --loglevel=error rather than --silent: --silent suppresses errors too,
+        # so the captured log came back empty and the `-s` guard below skipped
+        # it, leaving "npm install failed" with no reason attached and the
+        # failure indistinguishable from a timeout.
         local npm_log
         npm_log="$(mktemp)"
-        if ! run_with_timeout "$NODE_DEPS_TIMEOUT" npm install --silent \
+        if ! run_with_timeout "$NODE_DEPS_TIMEOUT" npm install --loglevel=error \
                 >"$npm_log" 2>&1; then
             log_error "npm install failed or timed out; Node.js dependencies were not installed"
             if [ -s "$npm_log" ]; then
@@ -2442,10 +2446,14 @@ install_node_deps() {
         # Time-boxed: a stalled registry fetch would otherwise hang here (#39219).
         # Report success only on actual success, same as node-deps above
         # (#77003) — and fail the install outright (#85297).
-        # Capture npm output so failures are diagnosable (#87340).
+        # Capture npm output so failures are diagnosable (#87340). Use
+        # --loglevel=error rather than --silent: --silent suppresses errors too,
+        # so the captured log came back empty and the `-s` guard below skipped
+        # it, leaving "npm install failed" with no reason attached and the
+        # failure indistinguishable from a timeout.
         local tui_npm_log
         tui_npm_log="$(mktemp)"
-        if ! run_with_timeout "$NODE_DEPS_TIMEOUT" npm install --silent \
+        if ! run_with_timeout "$NODE_DEPS_TIMEOUT" npm install --loglevel=error \
                 >"$tui_npm_log" 2>&1; then
             log_error "TUI npm install failed or timed out; TUI dependencies were not installed"
             if [ -s "$tui_npm_log" ]; then
